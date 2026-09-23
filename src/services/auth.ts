@@ -17,25 +17,39 @@ export async function connexion(
   email: string,
   password: string
 ): Promise<LoginResponse> {
-  const response = await api.post<LoginResponse>(
-    "/auth/login",
+  const response = await fetch(
+    "https://tsc-management-api-production.up.railway.app/api/auth/login",
     {
-      email,
-      password,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
     }
   );
 
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data?.message || "Erreur lors de la connexion."
+    );
+  }
+
   localStorage.setItem(
     "tsc_token",
-    response.data.accessToken
+    data.accessToken
   );
 
   localStorage.setItem(
     "tsc_user",
-    JSON.stringify(response.data.user)
+    JSON.stringify(data.user)
   );
 
-  return response.data;
+  return data;
 }
 
 export function deconnexion() {
@@ -64,6 +78,7 @@ export function estConnecte(): boolean {
     localStorage.getItem("tsc_token")
   );
 }
+
 export async function changerMotDePasse(
   ancienMotDePasse: string,
   nouveauMotDePasse: string,
