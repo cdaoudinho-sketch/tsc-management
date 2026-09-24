@@ -1,51 +1,181 @@
-import axios from "axios";
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:3000/api";
 
-const api = axios.create({
-  baseURL:
-    import.meta.env.VITE_API_URL ||
-    "http://localhost:3000/api",
-});
+type RequestOptions = {
+  params?: Record<string, string | number | boolean | undefined>;
+};
 
-api.interceptors.request.use((config) => {
+type ApiResponse<T = any> = {
+  data: T;
+  status: number;
+  ok: boolean;
+};
+
+async function request<T = any>(
+  method: string,
+  endpoint: string,
+  body?: unknown,
+  options?: RequestOptions
+): Promise<ApiResponse<T>> {
   const token = localStorage.getItem("tsc_token");
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  let url = `${API_URL}${endpoint}`;
+
+  if (options?.params) {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(options.params).forEach(
+      ([key, value]) => {
+        if (
+          value !== undefined &&
+          value !== null
+        ) {
+          searchParams.append(
+            key,
+            String(value)
+          );
+        }
+      }
+    );
+
+    const query = searchParams.toString();
+
+    if (query) {
+      url += `?${query}`;
+    }
   }
 
-  // Évite les réponses 304 mises en cache par le navigateur
-  if (config.method === "get") {
-    config.params = {
-      ...(config.params || {}),
-      _ts: Date.now(),
-    };
+  const headers: Record<string, string> = {
+    Accept:
+      "application/json, text/plain, */*",
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
 
   if (
-    config.method === "post" ||
-    config.method === "put" ||
-    config.method === "patch"
+    method === "POST" ||
+    method === "PUT" ||
+    method === "PATCH"
   ) {
-    config.headers["Content-Type"] = "application/json";
+    headers["Content-Type"] =
+      "application/json";
   }
 
-  return config;
-});
+  const response = await fetch(url, {
+    method,
+    headers,
+    body:
+      body !== undefined
+        ? JSON.stringify(body)
+        : undefined,
+  });
 
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem("tsc_token");
-      localStorage.removeItem("tsc_user");
+  const contentType =
+    response.headers.get("content-type") || "";
 
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
-      }
+  let data: any = null;
+
+  if (contentType.includes("application/json")) {
+    data = await response.json();
+  } else {
+    const text = await response.text();
+
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = text;
     }
-
-    return Promise.reject(error);
   }
-);
+
+  if (response.status === 401) {
+    localStorage.removeItem("tsc_token");
+    localStorage.removeItem("tsc_user");
+
+    if (
+      window.location.pathname !== "/login"
+    ) {
+      window.location.href = "/login";
+    }
+  }
+
+  if (!response.ok) {
+    const error: any = new Error(
+      data?.message ||
+        `Erreur HTTP ${response.status}`
+    );
+
+    error.response = {
+      status: response.status,
+      data,
+    };
+
+    throw error;
+  }
+
+  return {
+    data,
+    status: response.status,
+    ok: response.ok,
+  };
+}
+
+const api = {
+  get<T = any>(
+    endpoint: string,
+    options?: RequestOptions
+  ) {
+    return request<T>(
+      "GET",
+      endpoint,
+      undefined,
+      options
+    );
+  },
+
+  post<T = any>(
+    endpoint: string,
+    body?: unknown
+  ) {
+    return request<T>(
+      "POST",
+      endpoint,
+      body
+    );
+  },
+
+  put<T = any>(
+    endpoint: string,
+    body?: unknown
+  ) {
+    return request<T>(
+      "PUT",
+      endpoint,
+      body
+    );
+  },
+
+  patch<T = any>(
+    endpoint: string,
+    body?: unknown
+  ) {
+    return request<T>(
+      "PATCH",
+      endpoint,
+      body
+    );
+  },
+
+  delete<T = any>(
+    endpoint: string
+  ) {
+    return request<T>(
+      "DELETE",
+      endpoint
+    );
+  },
+};
 
 export default api;
