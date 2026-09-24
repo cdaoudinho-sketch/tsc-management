@@ -81,83 +81,83 @@ export default function Dashboard() {
   const [erreur, setErreur] =
     useState("");
 
-   useEffect(() => {
-    let actif = true;
+useEffect(() => {
+  let actif = true;
 
-    async function chargerDashboard() {
-      try {
-        setErreur("");
+  async function chargerDashboard() {
+    try {
+      const [
+        dashboardResponse,
+        formationsResponse,
+        evolutionResponse,
+        impayesResponse,
+        paiementsResponse,
+      ] = await Promise.all([
+        api.get("/dashboard"),
+        api.get("/dashboard/formations"),
+        api.get("/dashboard/evolution-mensuelle"),
+        api.get("/dashboard/impayes"),
+        api.get("/paiements"),
+      ]);
 
-        const [
-          dashboardResponse,
-          formationsResponse,
-          evolutionResponse,
-          impayesResponse,
-          paiementsResponse,
-        ] = await Promise.all([
-          api.get("/dashboard"),
-          api.get("/dashboard/formations"),
-          api.get("/dashboard/evolution-mensuelle"),
-          api.get("/dashboard/impayes"),
-          api.get("/paiements"),
-        ]);
+      if (!actif) return;
 
-        if (!actif) return;
+      setStats(dashboardResponse.data);
+      setFormations(formationsResponse.data);
+      setEvolution(evolutionResponse.data);
+      setImpayes(impayesResponse.data);
+      setPaiements(paiementsResponse.data);
 
-        setStats(dashboardResponse.data);
-        setFormations(formationsResponse.data);
-        setEvolution(evolutionResponse.data);
-        setImpayes(impayesResponse.data);
-        setPaiements(paiementsResponse.data);
+      setErreur("");
 
-        console.log("✅ Dashboard actualisé");
-      } catch (error: any) {
-        console.error("Erreur Dashboard :", error);
+      console.log("✅ DASHBOARD RECHARGÉ");
+      console.log("📊 Statistiques :", dashboardResponse.data);
+    } catch (error: any) {
+      console.error("❌ ERREUR DASHBOARD :", error);
 
-        if (actif) {
-          setErreur(
-            error?.response?.data?.message ||
-              "Impossible de charger le tableau de bord."
-          );
-        }
-      } finally {
-        if (actif) {
-          setLoading(false);
-        }
+      if (actif) {
+        setErreur(
+          error?.response?.data?.message ||
+            "Impossible de charger le tableau de bord."
+        );
+      }
+    } finally {
+      if (actif) {
+        setLoading(false);
       }
     }
+  }
 
-    // Chargement initial
+  // Chargement initial
+  chargerDashboard();
+
+  // Événement envoyé après une modification
+  const actualiserDashboard = () => {
+    console.log("🔄 MODIFICATION DÉTECTÉE → DASHBOARD");
     chargerDashboard();
+  };
 
-    // Actualisation immédiate lorsqu'une donnée TSC change
-    const actualiserDashboard = () => {
-      console.log("🔄 ÉVÉNEMENT : actualisation Dashboard");
-      chargerDashboard();
-    };
+  window.addEventListener(
+    "tsc:data-changed",
+    actualiserDashboard
+  );
 
-    window.addEventListener(
+  // Sécurité : recharge toutes les 3 secondes
+  const intervalle = window.setInterval(() => {
+    chargerDashboard();
+  }, 3000);
+
+  return () => {
+    actif = false;
+
+    window.removeEventListener(
       "tsc:data-changed",
       actualiserDashboard
     );
 
-    // Sécurité : actualisation automatique toutes les 10 secondes
-    const intervalle = window.setInterval(() => {
-      console.log("⏱️ Actualisation automatique Dashboard");
-      chargerDashboard();
-    }, 10000);
-
-    return () => {
-      actif = false;
-
-      window.removeEventListener(
-        "tsc:data-changed",
-        actualiserDashboard
-      );
-
-      window.clearInterval(intervalle);
-    };
-  }, []);
+    window.clearInterval(intervalle);
+  };
+}, []);
 
   if (loading) {
     return (
