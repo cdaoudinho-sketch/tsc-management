@@ -1,6 +1,6 @@
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  "http://localhost:3000/api";
+const API_URL = import.meta.env.DEV
+  ? "http://localhost:3000/api"
+  : "https://tsc-management-api-production.up.railway.app/api";
 
 type RequestOptions = {
   params?: Record<string, string | number | boolean | undefined>;
