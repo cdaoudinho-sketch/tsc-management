@@ -217,6 +217,8 @@ export default function Inscriptions() {
       // Le Dashboard recharge alors ses statistiques.
 
       signalerModification();
+      console.log("📢 ÉVÉNEMENT TSC ENVOYÉ");
+signalerModification();
 
       // -------------------------------------------------
       // NETTOYAGE DU FORMULAIRE
