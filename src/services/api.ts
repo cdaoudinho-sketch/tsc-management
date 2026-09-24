@@ -13,6 +13,14 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
+  // Évite les réponses 304 mises en cache par le navigateur
+  if (config.method === "get") {
+    config.params = {
+      ...(config.params || {}),
+      _ts: Date.now(),
+    };
+  }
+
   if (
     config.method === "post" ||
     config.method === "put" ||
