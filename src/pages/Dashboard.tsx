@@ -81,64 +81,63 @@ export default function Dashboard() {
   const [erreur, setErreur] =
     useState("");
 
-  useEffect(() => {
-    async function chargerDashboard() {
-      try {
-        setLoading(true);
-        setErreur("");
+ useEffect(() => {
+  let actif = true;
 
-        const [
-          dashboardResponse,
-          formationsResponse,
-          evolutionResponse,
-          impayesResponse,
-          paiementsResponse,
-        ] = await Promise.all([
-          api.get("/dashboard"),
-          api.get("/dashboard/formations"),
-          api.get(
-            "/dashboard/evolution-mensuelle"
-          ),
-          api.get("/dashboard/impayes"),
-          api.get("/paiements"),
-        ]);
+  async function chargerDashboard() {
+    try {
+      setErreur("");
 
-        setStats(
-          dashboardResponse.data
-        );
+      const [
+        dashboardResponse,
+        formationsResponse,
+        evolutionResponse,
+        impayesResponse,
+        paiementsResponse,
+      ] = await Promise.all([
+        api.get("/dashboard"),
+        api.get("/dashboard/formations"),
+        api.get("/dashboard/evolution-mensuelle"),
+        api.get("/dashboard/impayes"),
+        api.get("/paiements"),
+      ]);
 
-        setFormations(
-          formationsResponse.data
-        );
+      if (!actif) return;
 
-        setEvolution(
-          evolutionResponse.data
-        );
+      setStats(dashboardResponse.data);
+      setFormations(formationsResponse.data);
+      setEvolution(evolutionResponse.data);
+      setImpayes(impayesResponse.data);
+      setPaiements(paiementsResponse.data);
+    } catch (error: any) {
+      console.error("Erreur Dashboard :", error);
 
-        setImpayes(
-          impayesResponse.data
-        );
-
-        setPaiements(
-          paiementsResponse.data
-        );
-      } catch (error: any) {
-        console.error(
-          "Erreur Dashboard :",
-          error
-        );
-
+      if (actif) {
         setErreur(
           error?.response?.data?.message ||
             "Impossible de charger le tableau de bord."
         );
-      } finally {
+      }
+    } finally {
+      if (actif) {
         setLoading(false);
       }
     }
+  }
 
+  // Chargement immédiat
+  chargerDashboard();
+
+  // Actualisation automatique toutes les 10 secondes
+  const intervalle = window.setInterval(() => {
     chargerDashboard();
-  }, []);
+  }, 10000);
+
+  return () => {
+    actif = false;
+    window.clearInterval(intervalle);
+  };
+}, []);
 
   if (loading) {
     return (

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+
 import type { Eleve } from "../types";
 import { obtenirEleves } from "../services/eleves";
 
@@ -14,8 +15,7 @@ function Eleves() {
   const [formation, setFormation] = useState("Toutes");
   const [statut, setStatut] = useState("Tous");
 
-  const [eleves, setEleves] =
-    useState<Eleve[]>([]);
+  const [eleves, setEleves] = useState<Eleve[]>([]);
 
   const [chargement, setChargement] =
     useState(true);
@@ -27,28 +27,65 @@ function Eleves() {
   // CHARGEMENT DES ÉLÈVES
   // ==============================
 
-  useEffect(() => {
-    async function chargerEleves() {
-      try {
-        setChargement(true);
-        setErreur("");
+  async function chargerEleves() {
+    try {
+      setChargement(true);
+      setErreur("");
 
-        const donnees =
-          await obtenirEleves();
+      const donnees =
+        await obtenirEleves();
 
-        setEleves(donnees);
-      } catch (error) {
-        console.error(error);
+      setEleves(donnees);
+    } catch (error) {
+      console.error(error);
 
-        setErreur(
-          "Impossible de charger les élèves."
-        );
-      } finally {
-        setChargement(false);
-      }
+      setErreur(
+        "Impossible de charger les élèves."
+      );
+    } finally {
+      setChargement(false);
     }
+  }
 
+  useEffect(() => {
+    // Chargement initial
     chargerEleves();
+
+    // ==========================================
+    // ACTUALISATION AUTOMATIQUE
+    // ==========================================
+
+    const actualiserEleves = () => {
+      chargerEleves();
+    };
+
+    window.addEventListener(
+      "tsc:data-changed",
+      actualiserEleves
+    );
+
+    // ==========================================
+    // ACTUALISATION DE SÉCURITÉ
+    // Toutes les 10 secondes
+    // ==========================================
+
+    const intervalle =
+      window.setInterval(() => {
+        chargerEleves();
+      }, 10000);
+
+    // ==========================================
+    // NETTOYAGE
+    // ==========================================
+
+    return () => {
+      window.removeEventListener(
+        "tsc:data-changed",
+        actualiserEleves
+      );
+
+      window.clearInterval(intervalle);
+    };
   }, []);
 
   // ==============================
@@ -157,6 +194,7 @@ function Eleves() {
       <div className="eleves-header">
 
         <div>
+
           <h1>
             Élèves
           </h1>
@@ -164,6 +202,7 @@ function Eleves() {
           <p>
             Gestion des apprenants du TSC
           </p>
+
         </div>
 
         <button
@@ -184,11 +223,13 @@ function Eleves() {
       <div className="stats">
 
         <div className="card">
+
           <div className="card-icon">
             👨‍🎓
           </div>
 
           <div>
+
             <span>
               Total élèves
             </span>
@@ -196,15 +237,19 @@ function Eleves() {
             <h2>
               {totalEleves}
             </h2>
+
           </div>
+
         </div>
 
         <div className="card">
+
           <div className="card-icon">
             ⚠️
           </div>
 
           <div>
+
             <span>
               Impayés
             </span>
@@ -212,15 +257,19 @@ function Eleves() {
             <h2>
               {totalImpayes}
             </h2>
+
           </div>
+
         </div>
 
         <div className="card">
+
           <div className="card-icon">
             💰
           </div>
 
           <div>
+
             <span>
               Paiements partiels
             </span>
@@ -228,7 +277,9 @@ function Eleves() {
             <h2>
               {totalPartiels}
             </h2>
+
           </div>
+
         </div>
 
       </div>
@@ -334,11 +385,13 @@ function Eleves() {
 
         {!chargement &&
           !erreur && (
+
             <table>
 
               <thead>
 
                 <tr>
+
                   <th>
                     Matricule
                   </th>
@@ -374,6 +427,7 @@ function Eleves() {
                   <th>
                     Actions
                   </th>
+
                 </tr>
 
               </thead>
@@ -396,6 +450,7 @@ function Eleves() {
                       );
 
                     return (
+
                       <tr
                         key={
                           eleve.matricule
@@ -407,9 +462,11 @@ function Eleves() {
                         <td>
 
                           <strong className="matricule">
+
                             {
                               eleve.matricule
                             }
+
                           </strong>
 
                         </td>
@@ -443,17 +500,21 @@ function Eleves() {
                         {/* TOTAL DU */}
 
                         <td>
+
                           {formatMoney(
                             eleve.totalDu
                           )}
+
                         </td>
 
                         {/* PAYE */}
 
                         <td>
+
                           {formatMoney(
                             eleve.totalPaye
                           )}
+
                         </td>
 
                         {/* RESTE */}
@@ -461,9 +522,11 @@ function Eleves() {
                         <td>
 
                           <strong>
+
                             {formatMoney(
                               reste
                             )}
+
                           </strong>
 
                         </td>
@@ -480,7 +543,9 @@ function Eleves() {
                                 "-"
                               )}`}
                           >
+
                             {statutEleve}
+
                           </span>
 
                         </td>
@@ -491,6 +556,8 @@ function Eleves() {
 
                           <div className="actions">
 
+                            {/* VOIR PROFIL */}
+
                             <Link
                               to={`/eleves/${eleve.matricule}`}
                               className="action-button"
@@ -499,6 +566,8 @@ function Eleves() {
                               👁
                             </Link>
 
+                            {/* PAIEMENT */}
+
                             <Link
                               to={`/paiements?matricule=${eleve.matricule}`}
                               className="action-button"
@@ -506,6 +575,8 @@ function Eleves() {
                             >
                               💰
                             </Link>
+
+                            {/* RECUS */}
 
                             <Link
                               to={`/recus?matricule=${eleve.matricule}`}
@@ -520,22 +591,29 @@ function Eleves() {
                         </td>
 
                       </tr>
+
                     );
+
                   }
                 )}
 
               </tbody>
 
             </table>
+
           )}
 
         {!chargement &&
           !erreur &&
           elevesFiltres.length ===
             0 && (
+
             <div className="empty">
+
               Aucun élève trouvé.
+
             </div>
+
           )}
 
       </div>

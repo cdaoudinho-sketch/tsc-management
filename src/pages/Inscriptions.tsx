@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../services/api";
+
+import api, {
+  signalerModification,
+} from "../services/api";
 
 type Formation = {
   id: number;
@@ -12,6 +15,7 @@ type Formation = {
 type InscriptionResponse = {
   message: string;
   matricule: string;
+
   eleve: {
     id: number;
     matricule: string;
@@ -22,6 +26,7 @@ type InscriptionResponse = {
     totalDu: number;
     totalPaye: number;
   };
+
   inscription: {
     id: number;
     eleveId: number;
@@ -33,11 +38,15 @@ type InscriptionResponse = {
 };
 
 function formatMoney(montant: number) {
-  return new Intl.NumberFormat("fr-FR").format(montant) + " F CFA";
+  return (
+    new Intl.NumberFormat("fr-FR").format(montant) +
+    " F CFA"
+  );
 }
 
 function getAnneeScolaire() {
   const annee = new Date().getFullYear();
+
   return `${annee}-${annee + 1}`;
 }
 
@@ -48,19 +57,29 @@ export default function Inscriptions() {
   // ETATS
   // =====================================================
 
-  const [formations, setFormations] = useState<Formation[]>([]);
+  const [formations, setFormations] =
+    useState<Formation[]>([]);
 
   const [nom, setNom] = useState("");
   const [contact, setContact] = useState("");
-  const [formationId, setFormationId] = useState("");
-  const [annee, setAnnee] = useState(getAnneeScolaire());
+  const [formationId, setFormationId] =
+    useState("");
+  const [annee, setAnnee] =
+    useState(getAnneeScolaire());
 
-  const [loading, setLoading] = useState(false);
-  const [chargementFormations, setChargementFormations] =
-    useState(true);
+  const [loading, setLoading] =
+    useState(false);
 
-  const [message, setMessage] = useState("");
-  const [erreur, setErreur] = useState("");
+  const [
+    chargementFormations,
+    setChargementFormations,
+  ] = useState(true);
+
+  const [message, setMessage] =
+    useState("");
+
+  const [erreur, setErreur] =
+    useState("");
 
   const [resultat, setResultat] =
     useState<InscriptionResponse | null>(null);
@@ -100,10 +119,11 @@ export default function Inscriptions() {
   // FORMATION SELECTIONNEE
   // =====================================================
 
-  const formationSelectionnee = formations.find(
-    (formation) =>
-      formation.id === Number(formationId)
-  );
+  const formationSelectionnee =
+    formations.find(
+      (formation) =>
+        formation.id === Number(formationId)
+    );
 
   // =====================================================
   // SOUMISSION
@@ -123,7 +143,9 @@ export default function Inscriptions() {
     // ---------------------------------------------------
 
     if (!nom.trim()) {
-      setErreur("Veuillez saisir le nom de l'élève.");
+      setErreur(
+        "Veuillez saisir le nom de l'élève."
+      );
       return;
     }
 
@@ -164,6 +186,7 @@ export default function Inscriptions() {
 
       // -------------------------------------------------
       // UNE SEULE REQUETE
+      //
       // Le backend crée :
       // - l'élève
       // - le matricule
@@ -176,6 +199,10 @@ export default function Inscriptions() {
           donnees
         );
 
+      // -------------------------------------------------
+      // RESULTAT
+      // -------------------------------------------------
+
       setResultat(response.data);
 
       setMessage(
@@ -183,7 +210,16 @@ export default function Inscriptions() {
       );
 
       // -------------------------------------------------
-      // Nettoyage du formulaire
+      // ACTUALISATION DU DASHBOARD
+      // -------------------------------------------------
+      // Informe le Dashboard qu'une donnée
+      // vient d'être modifiée.
+      // Le Dashboard recharge alors ses statistiques.
+
+      signalerModification();
+
+      // -------------------------------------------------
+      // NETTOYAGE DU FORMULAIRE
       // -------------------------------------------------
 
       setNom("");
@@ -221,22 +257,35 @@ export default function Inscriptions() {
 
   return (
     <div className="page-container">
+
+      {/* =================================================
+          EN-TÊTE
+      ================================================= */}
+
       <div className="page-header">
+
         <div>
-          <h1>Nouvelle inscription</h1>
+
+          <h1>
+            Nouvelle inscription
+          </h1>
 
           <p>
             Inscrire un nouvel élève à une formation
           </p>
+
         </div>
 
         <button
           type="button"
           className="btn-secondary"
-          onClick={() => navigate("/eleves")}
+          onClick={() =>
+            navigate("/eleves")
+          }
         >
           Retour aux élèves
         </button>
+
       </div>
 
       {/* =================================================
@@ -264,43 +313,70 @@ export default function Inscriptions() {
       ================================================= */}
 
       {resultat && (
+
         <div className="success-card">
-          <h2>Inscription enregistrée</h2>
+
+          <h2>
+            Inscription enregistrée
+          </h2>
 
           <div className="success-info">
+
             <div>
-              <span>Matricule</span>
+
+              <span>
+                Matricule
+              </span>
+
               <strong>
                 {resultat.matricule}
               </strong>
+
             </div>
 
             <div>
-              <span>Élève</span>
+
+              <span>
+                Élève
+              </span>
+
               <strong>
                 {resultat.eleve.nom}
               </strong>
+
             </div>
 
             <div>
-              <span>Formation</span>
+
+              <span>
+                Formation
+              </span>
+
               <strong>
                 {resultat.eleve.formation}{" "}
                 {resultat.eleve.niveau}
               </strong>
+
             </div>
 
             <div>
-              <span>Montant total</span>
+
+              <span>
+                Montant total
+              </span>
+
               <strong>
                 {formatMoney(
                   resultat.inscription.montant
                 )}
               </strong>
+
             </div>
+
           </div>
 
           <div className="success-actions">
+
             <button
               type="button"
               className="btn-primary"
@@ -323,8 +399,11 @@ export default function Inscriptions() {
             >
               Nouvelle inscription
             </button>
+
           </div>
+
         </div>
+
       )}
 
       {/* =================================================
@@ -332,18 +411,28 @@ export default function Inscriptions() {
       ================================================= */}
 
       {!resultat && (
+
         <form
           onSubmit={handleSubmit}
           className="form-card"
         >
+
+          {/* =================================================
+              INFORMATIONS DE L'ÉLÈVE
+          ================================================= */}
+
           <div className="form-section">
-            <h2>Informations de l'élève</h2>
+
+            <h2>
+              Informations de l'élève
+            </h2>
 
             <div className="form-grid">
 
               {/* NOM */}
 
               <div className="form-group">
+
                 <label htmlFor="nom">
                   Nom et prénoms
                 </label>
@@ -353,16 +442,20 @@ export default function Inscriptions() {
                   type="text"
                   value={nom}
                   onChange={(event) =>
-                    setNom(event.target.value)
+                    setNom(
+                      event.target.value
+                    )
                   }
                   placeholder="Ex : COULIBALY Daouda"
                   disabled={loading}
                 />
+
               </div>
 
               {/* CONTACT */}
 
               <div className="form-group">
+
                 <label htmlFor="contact">
                   Contact
                 </label>
@@ -379,9 +472,11 @@ export default function Inscriptions() {
                   placeholder="Ex : 0700000001"
                   disabled={loading}
                 />
+
               </div>
 
             </div>
+
           </div>
 
           {/* =================================================
@@ -389,11 +484,17 @@ export default function Inscriptions() {
           ================================================= */}
 
           <div className="form-section">
-            <h2>Formation</h2>
+
+            <h2>
+              Formation
+            </h2>
 
             <div className="form-grid">
 
+              {/* FORMATION */}
+
               <div className="form-group">
+
                 <label htmlFor="formation">
                   Formation
                 </label>
@@ -411,6 +512,7 @@ export default function Inscriptions() {
                     chargementFormations
                   }
                 >
+
                   <option value="">
                     {chargementFormations
                       ? "Chargement..."
@@ -419,6 +521,7 @@ export default function Inscriptions() {
 
                   {formations.map(
                     (formation) => (
+
                       <option
                         key={formation.id}
                         value={formation.id}
@@ -429,14 +532,18 @@ export default function Inscriptions() {
                           formation.prix
                         )}
                       </option>
+
                     )
                   )}
+
                 </select>
+
               </div>
 
               {/* ANNEE */}
 
               <div className="form-group">
+
                 <label htmlFor="annee">
                   Année scolaire
                 </label>
@@ -453,9 +560,11 @@ export default function Inscriptions() {
                   placeholder="Ex : 2026-2027"
                   disabled={loading}
                 />
+
               </div>
 
             </div>
+
           </div>
 
           {/* =================================================
@@ -463,7 +572,9 @@ export default function Inscriptions() {
           ================================================= */}
 
           {formationSelectionnee && (
+
             <div className="formation-resume">
+
               <h3>
                 Résumé de la formation
               </h3>
@@ -471,6 +582,7 @@ export default function Inscriptions() {
               <div className="resume-grid">
 
                 <div>
+
                   <span>
                     Formation
                   </span>
@@ -478,9 +590,11 @@ export default function Inscriptions() {
                   <strong>
                     {formationSelectionnee.nom}
                   </strong>
+
                 </div>
 
                 <div>
+
                   <span>
                     Niveau
                   </span>
@@ -488,9 +602,11 @@ export default function Inscriptions() {
                   <strong>
                     {formationSelectionnee.niveau}
                   </strong>
+
                 </div>
 
                 <div>
+
                   <span>
                     Prix total
                   </span>
@@ -500,6 +616,7 @@ export default function Inscriptions() {
                       formationSelectionnee.prix
                     )}
                   </strong>
+
                 </div>
 
               </div>
@@ -509,6 +626,7 @@ export default function Inscriptions() {
               ================================================= */}
 
               <div className="tranches">
+
                 <h4>
                   Échéancier de paiement
                 </h4>
@@ -516,6 +634,7 @@ export default function Inscriptions() {
                 <div className="tranches-grid">
 
                   <div className="tranche">
+
                     <span>
                       1ère tranche
                     </span>
@@ -528,9 +647,11 @@ export default function Inscriptions() {
                         )
                       )}
                     </strong>
+
                   </div>
 
                   <div className="tranche">
+
                     <span>
                       2ème tranche
                     </span>
@@ -543,6 +664,7 @@ export default function Inscriptions() {
                         )
                       )}
                     </strong>
+
                   </div>
 
                 </div>
@@ -553,8 +675,11 @@ export default function Inscriptions() {
                   Aucun frais d'inscription
                   supplémentaire n'est ajouté.
                 </p>
+
               </div>
+
             </div>
+
           )}
 
           {/* =================================================
@@ -588,8 +713,11 @@ export default function Inscriptions() {
             </button>
 
           </div>
+
         </form>
+
       )}
+
     </div>
   );
 }

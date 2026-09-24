@@ -179,3 +179,8 @@ const api = {
 };
 
 export default api;
+export function signalerModification() {
+  window.dispatchEvent(
+    new Event("tsc:data-changed")
+  );
+}

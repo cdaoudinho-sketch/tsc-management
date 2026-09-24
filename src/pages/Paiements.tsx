@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import api from "../services/api";
+import api, {
+  signalerModification,
+} from "../services/api";
 
 type Inscription = {
   id: number;
@@ -30,42 +32,75 @@ type Paiement = {
 };
 
 function formatMoney(montant: number) {
-  return new Intl.NumberFormat("fr-FR").format(montant) + " F CFA";
+  return (
+    new Intl.NumberFormat("fr-FR").format(montant) +
+    " F CFA"
+  );
 }
 
 export default function Paiements() {
-  const [inscriptions, setInscriptions] = useState<Inscription[]>([]);
-  const [paiements, setPaiements] = useState<Paiement[]>([]);
+  const [inscriptions, setInscriptions] =
+    useState<Inscription[]>([]);
 
-  const [inscriptionId, setInscriptionId] = useState("");
-  const [montant, setMontant] = useState("");
-  const [modePaiement, setModePaiement] = useState("ESPECES");
-  const [observation, setObservation] = useState("");
+  const [paiements, setPaiements] =
+    useState<Paiement[]>([]);
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [inscriptionId, setInscriptionId] =
+    useState("");
 
-  const [message, setMessage] = useState("");
-  const [erreur, setErreur] = useState("");
+  const [montant, setMontant] =
+    useState("");
+
+  const [modePaiement, setModePaiement] =
+    useState("ESPECES");
+
+  const [observation, setObservation] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [saving, setSaving] =
+    useState(false);
+
+  const [message, setMessage] =
+    useState("");
+
+  const [erreur, setErreur] =
+    useState("");
 
   const [dernierPaiement, setDernierPaiement] =
     useState<Paiement | null>(null);
+
+  // =====================================================
+  // CHARGEMENT DES DONNÉES
+  // =====================================================
 
   async function chargerDonnees() {
     try {
       setLoading(true);
       setErreur("");
 
-      const [inscriptionsResponse, paiementsResponse] =
-        await Promise.all([
-          api.get("/inscriptions"),
-          api.get("/paiements"),
-        ]);
+      const [
+        inscriptionsResponse,
+        paiementsResponse,
+      ] = await Promise.all([
+        api.get("/inscriptions"),
+        api.get("/paiements"),
+      ]);
 
-      setInscriptions(inscriptionsResponse.data);
-      setPaiements(paiementsResponse.data);
+      setInscriptions(
+        inscriptionsResponse.data
+      );
+
+      setPaiements(
+        paiementsResponse.data
+      );
     } catch (error: any) {
-      console.error("Erreur chargement paiements :", error);
+      console.error(
+        "Erreur chargement paiements :",
+        error
+      );
 
       setErreur(
         error?.response?.data?.message ||
@@ -80,19 +115,31 @@ export default function Paiements() {
     chargerDonnees();
   }, []);
 
-  const inscriptionSelectionnee = inscriptions.find(
-    (inscription) =>
-      inscription.id === Number(inscriptionId)
-  );
+  // =====================================================
+  // INSCRIPTION SÉLECTIONNÉE
+  // =====================================================
 
-  const montantSaisi = Number(montant) || 0;
+  const inscriptionSelectionnee =
+    inscriptions.find(
+      (inscription) =>
+        inscription.id === Number(inscriptionId)
+    );
 
-  const nouveauSolde = inscriptionSelectionnee
-    ? Math.max(
-        inscriptionSelectionnee.solde - montantSaisi,
-        0
-      )
-    : 0;
+  const montantSaisi =
+    Number(montant) || 0;
+
+  const nouveauSolde =
+    inscriptionSelectionnee
+      ? Math.max(
+          inscriptionSelectionnee.solde -
+            montantSaisi,
+          0
+        )
+      : 0;
+
+  // =====================================================
+  // ENREGISTRER UN PAIEMENT
+  // =====================================================
 
   async function enregistrerPaiement(
     event: React.FormEvent<HTMLFormElement>
@@ -103,11 +150,15 @@ export default function Paiements() {
     setErreur("");
     setDernierPaiement(null);
 
+    // Vérification élève
     if (!inscriptionId) {
-      setErreur("Veuillez sélectionner un élève.");
+      setErreur(
+        "Veuillez sélectionner un élève."
+      );
       return;
     }
 
+    // Vérification montant
     if (montantSaisi <= 0) {
       setErreur(
         "Veuillez saisir un montant supérieur à 0."
@@ -115,9 +166,11 @@ export default function Paiements() {
       return;
     }
 
+    // Vérification solde
     if (
       inscriptionSelectionnee &&
-      montantSaisi > inscriptionSelectionnee.solde
+      montantSaisi >
+        inscriptionSelectionnee.solde
     ) {
       setErreur(
         `Le montant maximum autorisé est de ${formatMoney(
@@ -130,41 +183,87 @@ export default function Paiements() {
     try {
       setSaving(true);
 
+      // =================================================
+      // ENREGISTREMENT DU PAIEMENT
+      // =================================================
+
       const response = await api.post(
         "/paiements",
         {
-          inscriptionId: Number(inscriptionId),
+          inscriptionId:
+            Number(inscriptionId),
+
           montant: montantSaisi,
+
           modePaiement,
+
           observation:
-            observation.trim() || undefined,
+            observation.trim() ||
+            undefined,
         }
       );
+
+      // =================================================
+      // MESSAGE DE SUCCÈS
+      // =================================================
 
       setMessage(
         `Paiement enregistré. Reçu : ${response.data.numeroRecu}`
       );
 
+      // =================================================
+      // DERNIER PAIEMENT
+      // =================================================
+
       setDernierPaiement({
         ...response.data.paiement,
-        numeroRecu: response.data.numeroRecu,
-        inscriptionId: Number(inscriptionId),
-        montant: montantSaisi,
+
+        numeroRecu:
+          response.data.numeroRecu,
+
+        inscriptionId:
+          Number(inscriptionId),
+
+        montant:
+          montantSaisi,
+
         modePaiement,
+
         observation:
           observation.trim() || null,
+
         matricule:
-          inscriptionSelectionnee?.matricule || "",
+          inscriptionSelectionnee?.matricule ||
+          "",
+
         nom:
-          inscriptionSelectionnee?.nom || "",
+          inscriptionSelectionnee?.nom ||
+          "",
+
         formation:
-          inscriptionSelectionnee?.formation || "",
+          inscriptionSelectionnee?.formation ||
+          "",
       });
+
+      // =================================================
+      // NETTOYAGE DU FORMULAIRE
+      // =================================================
 
       setMontant("");
       setObservation("");
 
+      // =================================================
+      // ACTUALISATION DE LA PAGE PAIEMENTS
+      // =================================================
+
       await chargerDonnees();
+
+      // =================================================
+      // ACTUALISATION IMMÉDIATE DU DASHBOARD
+      // =================================================
+
+      signalerModification();
+
     } catch (error: any) {
       console.error(
         "Erreur enregistrement paiement :",
@@ -175,7 +274,9 @@ export default function Paiements() {
         error?.response?.data?.message;
 
       if (Array.isArray(messageErreur)) {
-        setErreur(messageErreur.join(" "));
+        setErreur(
+          messageErreur.join(" ")
+        );
       } else {
         setErreur(
           messageErreur ||
@@ -187,6 +288,10 @@ export default function Paiements() {
     }
   }
 
+  // =====================================================
+  // CHARGEMENT
+  // =====================================================
+
   if (loading) {
     return (
       <div className="page-container">
@@ -197,16 +302,30 @@ export default function Paiements() {
     );
   }
 
+  // =====================================================
+  // AFFICHAGE
+  // =====================================================
+
   return (
     <div className="page-container">
+
+      {/* =================================================
+          EN-TÊTE
+      ================================================= */}
+
       <div className="page-header">
         <div>
           <h1>Paiements</h1>
+
           <p>
             Enregistrer et suivre les paiements des élèves
           </p>
         </div>
       </div>
+
+      {/* =================================================
+          MESSAGE SUCCÈS
+      ================================================= */}
 
       {message && (
         <div className="alert alert-success">
@@ -214,19 +333,32 @@ export default function Paiements() {
         </div>
       )}
 
+      {/* =================================================
+          MESSAGE ERREUR
+      ================================================= */}
+
       {erreur && (
         <div className="alert alert-error">
           {erreur}
         </div>
       )}
 
+      {/* =================================================
+          DERNIER PAIEMENT
+      ================================================= */}
+
       {dernierPaiement && (
         <div className="success-card">
-          <h2>Paiement enregistré</h2>
+
+          <h2>
+            Paiement enregistré
+          </h2>
 
           <div className="success-info">
+
             <div>
               <span>Reçu</span>
+
               <strong>
                 {dernierPaiement.numeroRecu}
               </strong>
@@ -234,6 +366,7 @@ export default function Paiements() {
 
             <div>
               <span>Élève</span>
+
               <strong>
                 {dernierPaiement.nom}
               </strong>
@@ -241,23 +374,40 @@ export default function Paiements() {
 
             <div>
               <span>Montant</span>
+
               <strong>
                 {formatMoney(
                   dernierPaiement.montant
                 )}
               </strong>
             </div>
+
           </div>
         </div>
       )}
 
+      {/* =================================================
+          FORMULAIRE
+      ================================================= */}
+
       <div className="form-card">
-        <form onSubmit={enregistrerPaiement}>
+
+        <form
+          onSubmit={enregistrerPaiement}
+        >
+
           <div className="form-section">
-            <h2>Nouveau paiement</h2>
+
+            <h2>
+              Nouveau paiement
+            </h2>
 
             <div className="form-grid">
+
+              {/* ÉLÈVE */}
+
               <div className="form-group">
+
                 <label htmlFor="inscription">
                   Élève
                 </label>
@@ -269,12 +419,14 @@ export default function Paiements() {
                     setInscriptionId(
                       event.target.value
                     );
+
                     setMontant("");
                     setMessage("");
                     setErreur("");
                   }}
                   disabled={saving}
                 >
+
                   <option value="">
                     Sélectionner un élève
                   </option>
@@ -284,21 +436,32 @@ export default function Paiements() {
                       (inscription) =>
                         inscription.solde > 0
                     )
-                    .map((inscription) => (
-                      <option
-                        key={inscription.id}
-                        value={inscription.id}
-                      >
-                        {inscription.matricule} —{" "}
-                        {inscription.nom} —{" "}
-                        {inscription.formation}{" "}
-                        {inscription.niveau}
-                      </option>
-                    ))}
+                    .map(
+                      (inscription) => (
+                        <option
+                          key={
+                            inscription.id
+                          }
+                          value={
+                            inscription.id
+                          }
+                        >
+                          {inscription.matricule} —{" "}
+                          {inscription.nom} —{" "}
+                          {inscription.formation}{" "}
+                          {inscription.niveau}
+                        </option>
+                      )
+                    )}
+
                 </select>
+
               </div>
 
+              {/* MONTANT */}
+
               <div className="form-group">
+
                 <label htmlFor="montant">
                   Montant
                 </label>
@@ -309,7 +472,9 @@ export default function Paiements() {
                   min="1"
                   value={montant}
                   onChange={(event) =>
-                    setMontant(event.target.value)
+                    setMontant(
+                      event.target.value
+                    )
                   }
                   placeholder="Ex : 20000"
                   disabled={
@@ -317,9 +482,13 @@ export default function Paiements() {
                     !inscriptionSelectionnee
                   }
                 />
+
               </div>
 
+              {/* MODE DE PAIEMENT */}
+
               <div className="form-group">
+
                 <label htmlFor="mode">
                   Mode de paiement
                 </label>
@@ -334,31 +503,43 @@ export default function Paiements() {
                   }
                   disabled={saving}
                 >
+
                   <option value="ESPECES">
                     Espèces
                   </option>
+
                   <option value="WAVE">
                     Wave
                   </option>
+
                   <option value="ORANGE_MONEY">
                     Orange Money
                   </option>
+
                   <option value="MTN_MONEY">
                     MTN Money
                   </option>
+
                   <option value="MOOV_MONEY">
                     Moov Money
                   </option>
+
                   <option value="CHEQUE">
                     Chèque
                   </option>
+
                   <option value="VIREMENT">
                     Virement
                   </option>
+
                 </select>
+
               </div>
 
+              {/* OBSERVATION */}
+
               <div className="form-group">
+
                 <label htmlFor="observation">
                   Observation
                 </label>
@@ -375,32 +556,52 @@ export default function Paiements() {
                   placeholder="Ex : Solde formation"
                   disabled={saving}
                 />
+
               </div>
+
             </div>
+
           </div>
+
+          {/* =================================================
+              SITUATION FINANCIÈRE
+          ================================================= */}
 
           {inscriptionSelectionnee && (
             <div className="formation-resume">
-              <h3>Situation financière</h3>
+
+              <h3>
+                Situation financière
+              </h3>
 
               <div className="resume-grid">
+
                 <div>
                   <span>Élève</span>
+
                   <strong>
-                    {inscriptionSelectionnee.nom}
+                    {
+                      inscriptionSelectionnee.nom
+                    }
                   </strong>
                 </div>
 
                 <div>
                   <span>Formation</span>
+
                   <strong>
-                    {inscriptionSelectionnee.formation}{" "}
-                    {inscriptionSelectionnee.niveau}
+                    {
+                      inscriptionSelectionnee.formation
+                    }{" "}
+                    {
+                      inscriptionSelectionnee.niveau
+                    }
                   </strong>
                 </div>
 
                 <div>
                   <span>Total dû</span>
+
                   <strong>
                     {formatMoney(
                       inscriptionSelectionnee.montant
@@ -410,6 +611,7 @@ export default function Paiements() {
 
                 <div>
                   <span>Total payé</span>
+
                   <strong>
                     {formatMoney(
                       inscriptionSelectionnee.totalPaye
@@ -419,6 +621,7 @@ export default function Paiements() {
 
                 <div>
                   <span>Reste actuel</span>
+
                   <strong>
                     {formatMoney(
                       inscriptionSelectionnee.solde
@@ -428,15 +631,25 @@ export default function Paiements() {
 
                 <div>
                   <span>Nouveau solde</span>
+
                   <strong>
-                    {formatMoney(nouveauSolde)}
+                    {formatMoney(
+                      nouveauSolde
+                    )}
                   </strong>
                 </div>
+
               </div>
+
             </div>
           )}
 
+          {/* =================================================
+              BOUTON
+          ================================================= */}
+
           <div className="form-actions">
+
             <button
               type="submit"
               className="btn-primary"
@@ -449,91 +662,144 @@ export default function Paiements() {
                 ? "Enregistrement..."
                 : "Enregistrer le paiement"}
             </button>
+
           </div>
+
         </form>
+
       </div>
 
+      {/* =================================================
+          HISTORIQUE
+      ================================================= */}
+
       <div className="table-card">
+
         <div className="table-header">
+
           <div>
-            <h2>Derniers paiements</h2>
+
+            <h2>
+              Derniers paiements
+            </h2>
+
             <p>
               Historique des paiements enregistrés
             </p>
+
           </div>
+
         </div>
 
         <div className="table-container">
+
           <table>
+
             <thead>
+
               <tr>
+
                 <th>Reçu</th>
                 <th>Date</th>
                 <th>Élève</th>
                 <th>Formation</th>
                 <th>Montant</th>
                 <th>Mode</th>
+
               </tr>
+
             </thead>
 
             <tbody>
+
               {paiements.length === 0 ? (
+
                 <tr>
+
                   <td colSpan={6}>
                     Aucun paiement enregistré.
                   </td>
+
                 </tr>
+
               ) : (
+
                 paiements
                   .slice(0, 10)
-                  .map((paiement) => (
-                    <tr key={paiement.id}>
-                      <td>
-                        <strong>
-                          {paiement.numeroRecu}
-                        </strong>
-                      </td>
+                  .map(
+                    (paiement) => (
+                      <tr
+                        key={paiement.id}
+                      >
 
-                      <td>
-                        {new Date(
-                          paiement.datePaiement
-                        ).toLocaleDateString(
-                          "fr-FR"
-                        )}
-                      </td>
+                        <td>
+                          <strong>
+                            {
+                              paiement.numeroRecu
+                            }
+                          </strong>
+                        </td>
 
-                      <td>
-                        <strong>
-                          {paiement.nom}
-                        </strong>
-                        <br />
-                        <small>
-                          {paiement.matricule}
-                        </small>
-                      </td>
-
-                      <td>
-                        {paiement.formation}
-                      </td>
-
-                      <td>
-                        <strong>
-                          {formatMoney(
-                            paiement.montant
+                        <td>
+                          {new Date(
+                            paiement.datePaiement
+                          ).toLocaleDateString(
+                            "fr-FR"
                           )}
-                        </strong>
-                      </td>
+                        </td>
 
-                      <td>
-                        {paiement.modePaiement}
-                      </td>
-                    </tr>
-                  ))
+                        <td>
+
+                          <strong>
+                            {paiement.nom}
+                          </strong>
+
+                          <br />
+
+                          <small>
+                            {
+                              paiement.matricule
+                            }
+                          </small>
+
+                        </td>
+
+                        <td>
+                          {
+                            paiement.formation
+                          }
+                        </td>
+
+                        <td>
+
+                          <strong>
+                            {formatMoney(
+                              paiement.montant
+                            )}
+                          </strong>
+
+                        </td>
+
+                        <td>
+                          {
+                            paiement.modePaiement
+                          }
+                        </td>
+
+                      </tr>
+                    )
+                  )
+
               )}
+
             </tbody>
+
           </table>
+
         </div>
+
       </div>
+
     </div>
   );
 }

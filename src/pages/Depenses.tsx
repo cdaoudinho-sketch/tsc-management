@@ -10,6 +10,8 @@ import {
   type StatistiquesDepenses,
 } from "../services/depenses";
 
+import { signalerModification } from "../services/api";
+
 const CATEGORIES = [
   "Courant",
   "Eau",
@@ -73,6 +75,7 @@ const formulaireInitial: FormulaireDepense = {
 
 export default function Depenses() {
   const [depenses, setDepenses] = useState<Depense[]>([]);
+
   const [statistiques, setStatistiques] =
     useState<StatistiquesDepenses | null>(null);
 
@@ -230,18 +233,34 @@ export default function Depenses() {
           formulaire.dateDepense,
       };
 
+      // =================================================
+      // MODIFICATION
+      // =================================================
+
       if (editionId) {
         await modifierDepense(
           editionId,
           data
         );
-      } else {
+      }
+
+      // =================================================
+      // AJOUT
+      // =================================================
+
+      else {
         await ajouterDepense(data);
       }
 
+      // Fermer le formulaire
       fermerFormulaire();
 
+      // Actualiser la page Dépenses
       await chargerDonnees();
+
+      // Actualiser immédiatement le Dashboard
+      signalerModification();
+
     } catch (error: any) {
       console.error(
         "Erreur enregistrement dépense :",
@@ -279,7 +298,12 @@ export default function Depenses() {
 
       await supprimerDepense(depense.id);
 
+      // Actualiser la page Dépenses
       await chargerDonnees();
+
+      // Actualiser immédiatement le Dashboard
+      signalerModification();
+
     } catch (error: any) {
       console.error(
         "Erreur suppression :",
@@ -401,6 +425,7 @@ export default function Depenses() {
       <div className="depenses-stats">
 
         <div className="depense-stat-card">
+
           <div className="depense-stat-icon">
             💸
           </div>
@@ -416,9 +441,11 @@ export default function Depenses() {
               )}
             </strong>
           </div>
+
         </div>
 
         <div className="depense-stat-card">
+
           <div className="depense-stat-icon">
             📅
           </div>
@@ -434,9 +461,11 @@ export default function Depenses() {
               )}
             </strong>
           </div>
+
         </div>
 
         <div className="depense-stat-card">
+
           <div className="depense-stat-icon">
             🧾
           </div>
@@ -450,9 +479,11 @@ export default function Depenses() {
               {statistiques?.nombre || 0}
             </strong>
           </div>
+
         </div>
 
         <div className="depense-stat-card">
+
           <div className="depense-stat-icon">
             🔎
           </div>
@@ -466,6 +497,7 @@ export default function Depenses() {
               {formatMoney(totalFiltre)}
             </strong>
           </div>
+
         </div>
 
       </div>
@@ -475,11 +507,13 @@ export default function Depenses() {
       ================================================= */}
 
       {afficherFormulaire && (
+
         <div className="depense-form-card">
 
           <div className="depense-form-header">
 
             <div>
+
               <h2>
                 {editionId
                   ? "Modifier la dépense"
@@ -490,6 +524,7 @@ export default function Depenses() {
                 Renseignez les informations
                 de la dépense.
               </p>
+
             </div>
 
             <button
@@ -508,7 +543,10 @@ export default function Depenses() {
 
             <div className="depense-form-grid">
 
+              {/* LIBELLÉ */}
+
               <div className="form-group">
+
                 <label>
                   Libellé *
                 </label>
@@ -526,9 +564,13 @@ export default function Depenses() {
                   }
                   placeholder="Ex : Achat fournitures"
                 />
+
               </div>
 
+              {/* CATÉGORIE */}
+
               <div className="form-group">
+
                 <label>
                   Catégorie *
                 </label>
@@ -544,20 +586,28 @@ export default function Depenses() {
                     )
                   }
                 >
+
                   {CATEGORIES.map(
                     (categorie) => (
+
                       <option
                         key={categorie}
                         value={categorie}
                       >
                         {categorie}
                       </option>
+
                     )
                   )}
+
                 </select>
+
               </div>
 
+              {/* MONTANT */}
+
               <div className="form-group">
+
                 <label>
                   Montant (F CFA) *
                 </label>
@@ -576,9 +626,13 @@ export default function Depenses() {
                   }
                   placeholder="Ex : 25000"
                 />
+
               </div>
 
+              {/* DATE */}
+
               <div className="form-group">
+
                 <label>
                   Date *
                 </label>
@@ -595,9 +649,13 @@ export default function Depenses() {
                     )
                   }
                 />
+
               </div>
 
+              {/* BÉNÉFICIAIRE */}
+
               <div className="form-group">
+
                 <label>
                   Bénéficiaire
                 </label>
@@ -615,9 +673,13 @@ export default function Depenses() {
                   }
                   placeholder="Ex : Fournisseur"
                 />
+
               </div>
 
+              {/* OBSERVATION */}
+
               <div className="form-group form-group-full">
+
                 <label>
                   Observation
                 </label>
@@ -635,9 +697,12 @@ export default function Depenses() {
                   placeholder="Informations complémentaires..."
                   rows={3}
                 />
+
               </div>
 
             </div>
+
+            {/* ACTIONS FORMULAIRE */}
 
             <div className="depense-form-actions">
 
@@ -667,6 +732,7 @@ export default function Depenses() {
           </form>
 
         </div>
+
       )}
 
       {/* =================================================
@@ -675,7 +741,10 @@ export default function Depenses() {
 
       <div className="depenses-filters">
 
+        {/* RECHERCHE */}
+
         <div className="depense-search">
+
           <label>
             Recherche
           </label>
@@ -690,9 +759,13 @@ export default function Depenses() {
             }
             placeholder="Libellé, catégorie, bénéficiaire..."
           />
+
         </div>
 
+        {/* CATÉGORIE */}
+
         <div className="depense-category-filter">
+
           <label>
             Catégorie
           </label>
@@ -705,25 +778,33 @@ export default function Depenses() {
               )
             }
           >
+
             <option value="">
               Toutes les catégories
             </option>
 
             {CATEGORIES.map(
               (categorie) => (
+
                 <option
                   key={categorie}
                   value={categorie}
                 >
                   {categorie}
                 </option>
+
               )
             )}
+
           </select>
+
         </div>
+
+        {/* RÉINITIALISER */}
 
         {(recherche ||
           categorieFiltre) && (
+
           <button
             type="button"
             className="btn-secondary depense-reset"
@@ -734,6 +815,7 @@ export default function Depenses() {
           >
             Réinitialiser
           </button>
+
         )}
 
       </div>
@@ -747,6 +829,7 @@ export default function Depenses() {
         <div className="depenses-table-header">
 
           <div>
+
             <h2>
               Liste des dépenses
             </h2>
@@ -757,6 +840,7 @@ export default function Depenses() {
                 ? "s"
                 : ""}
             </span>
+
           </div>
 
           <strong>
@@ -765,7 +849,10 @@ export default function Depenses() {
 
         </div>
 
+        {/* AUCUNE DÉPENSE */}
+
         {depensesFiltrees.length === 0 ? (
+
           <div className="depenses-empty">
 
             <div>
@@ -782,12 +869,15 @@ export default function Depenses() {
             </p>
 
           </div>
+
         ) : (
+
           <div className="table-responsive">
 
             <table className="depenses-table">
 
               <thead>
+
                 <tr>
                   <th>Date</th>
                   <th>Libellé</th>
@@ -797,13 +887,19 @@ export default function Depenses() {
                   <th>Observation</th>
                   <th>Actions</th>
                 </tr>
+
               </thead>
 
               <tbody>
 
                 {depensesFiltrees.map(
                   (depense) => (
-                    <tr key={depense.id}>
+
+                    <tr
+                      key={depense.id}
+                    >
+
+                      {/* DATE */}
 
                       <td>
                         {formatDate(
@@ -811,38 +907,59 @@ export default function Depenses() {
                         )}
                       </td>
 
+                      {/* LIBELLÉ */}
+
                       <td>
+
                         <strong>
                           {depense.libelle}
                         </strong>
+
                       </td>
 
+                      {/* CATÉGORIE */}
+
                       <td>
+
                         <span className="depense-category-badge">
                           {depense.categorie}
                         </span>
+
                       </td>
+
+                      {/* BÉNÉFICIAIRE */}
 
                       <td>
                         {depense.beneficiaire ||
                           "—"}
                       </td>
 
+                      {/* MONTANT */}
+
                       <td>
+
                         <strong className="depense-montant">
                           {formatMoney(
                             depense.montant
                           )}
                         </strong>
+
                       </td>
+
+                      {/* OBSERVATION */}
 
                       <td>
                         {depense.observation ||
                           "—"}
                       </td>
 
+                      {/* ACTIONS */}
+
                       <td>
+
                         <div className="depense-actions">
+
+                          {/* MODIFIER */}
 
                           <button
                             type="button"
@@ -856,6 +973,8 @@ export default function Depenses() {
                           >
                             ✏️
                           </button>
+
+                          {/* SUPPRIMER */}
 
                           <button
                             type="button"
@@ -871,9 +990,11 @@ export default function Depenses() {
                           </button>
 
                         </div>
+
                       </td>
 
                     </tr>
+
                   )
                 )}
 
@@ -882,6 +1003,7 @@ export default function Depenses() {
             </table>
 
           </div>
+
         )}
 
       </div>
