@@ -6,6 +6,8 @@ import {
   useLocation,
 } from "react-router-dom";
 
+import { useState } from "react";
+
 import Dashboard from "./pages/Dashboard";
 import Eleves from "./pages/Eleves";
 import Inscriptions from "./pages/Inscriptions";
@@ -30,21 +32,19 @@ import {
 
 import "./App.css";
 
-/* =====================================================
-   APPLICATION
-===================================================== */
-
 function AppContent() {
   const location = useLocation();
-
   const user = obtenirUtilisateur();
+
+  const [menuOuvert, setMenuOuvert] =
+    useState(false);
 
   const isLoginPage =
     location.pathname === "/login";
 
-  /* ===================================================
-     PAGE DE CONNEXION
-  =================================================== */
+  const fermerMenu = () => {
+    setMenuOuvert(false);
+  };
 
   if (isLoginPage) {
     return (
@@ -57,209 +57,257 @@ function AppContent() {
     );
   }
 
-  /* ===================================================
-     APPLICATION PROTÉGÉE
-  =================================================== */
-
   return (
     <ProtectedRoute>
       <div className="app">
 
-        {/* =================================================
-            SIDEBAR
-        ================================================= */}
+        {/* =========================
+            HEADER MOBILE
+        ========================= */}
+        <header className="mobile-header">
 
-        <aside className="sidebar">
+          <button
+            type="button"
+            className="mobile-menu-button"
+            onClick={() =>
+              setMenuOuvert(!menuOuvert)
+            }
+            aria-label={
+              menuOuvert
+                ? "Fermer le menu"
+                : "Ouvrir le menu"
+            }
+          >
+            {menuOuvert ? "✕" : "☰"}
+          </button>
+
+          <div className="mobile-brand">
+            <LogoTsc />
+          </div>
+
+          <div className="mobile-user">
+            {user?.nom
+              ? user.nom
+                  .charAt(0)
+                  .toUpperCase()
+              : "U"}
+          </div>
+
+        </header>
+
+        {/* =========================
+            OVERLAY MOBILE
+        ========================= */}
+        {menuOuvert && (
+          <div
+            className="mobile-overlay"
+            onClick={fermerMenu}
+          />
+        )}
+
+        {/* =========================
+            SIDEBAR
+        ========================= */}
+        <aside
+          className={`sidebar ${
+            menuOuvert
+              ? "sidebar-mobile-open"
+              : ""
+          }`}
+        >
 
           {/* LOGO */}
-
           <div className="sidebar-logo">
             <LogoTsc />
           </div>
 
-          {/* UTILISATEUR CONNECTÉ */}
+          {/* UTILISATEUR */}
+          <div className="sidebar-user">
 
-          <div
-            style={{
-              padding: "12px 16px",
-              marginBottom: "10px",
-              borderBottom:
-                "1px solid rgba(255,255,255,0.08)",
-            }}
-          >
-            <div
-              style={{
-                fontWeight: 700,
-                fontSize: "14px",
-              }}
-            >
-              {user?.nom || "Utilisateur"}
+            <div className="sidebar-user-name">
+              {user?.nom ||
+                "Utilisateur"}
             </div>
 
-            <div
-              style={{
-                fontSize: "12px",
-                opacity: 0.7,
-                marginTop: "3px",
-              }}
-            >
+            <div className="sidebar-user-role">
               {user?.role || ""}
             </div>
+
           </div>
 
-          {/* MENU */}
-
+          {/* MENU PRINCIPAL */}
           <nav>
 
-            <Link to="/">
+            <Link
+              to="/"
+              onClick={fermerMenu}
+            >
               🏠 <span>Dashboard</span>
             </Link>
 
-            <Link to="/eleves">
+            <Link
+              to="/eleves"
+              onClick={fermerMenu}
+            >
               👨‍🎓 <span>Élèves</span>
             </Link>
 
-            <Link to="/inscriptions">
+            <Link
+              to="/inscriptions"
+              onClick={fermerMenu}
+            >
               📝 <span>Inscriptions</span>
             </Link>
 
-            <Link to="/paiements">
+            <Link
+              to="/paiements"
+              onClick={fermerMenu}
+            >
               💰 <span>Paiements</span>
             </Link>
 
-            <Link to="/recus">
+            <Link
+              to="/recus"
+              onClick={fermerMenu}
+            >
               🧾 <span>Reçus</span>
             </Link>
 
+            {/* ADMIN UNIQUEMENT */}
             {user?.role === "ADMIN" && (
-  <Link to="/depenses">
-    💸 <span>Dépenses</span>
-  </Link>
-)}
+              <Link
+                to="/depenses"
+                onClick={fermerMenu}
+              >
+                💸 <span>Dépenses</span>
+              </Link>
+            )}
 
-            <Link to="/rapports">
+            <Link
+              to="/rapports"
+              onClick={fermerMenu}
+            >
               📊 <span>Rapports</span>
             </Link>
 
-            {/* ==========================================
-                UTILISATEURS → ADMIN UNIQUEMENT
-            ========================================== */}
-
+            {/* ADMIN UNIQUEMENT */}
             {user?.role === "ADMIN" && (
-              <Link to="/utilisateurs">
+              <Link
+                to="/utilisateurs"
+                onClick={fermerMenu}
+              >
                 👥 <span>Utilisateurs</span>
               </Link>
             )}
 
           </nav>
 
-          {/* BAS DU MENU */}
-
+          {/* =========================
+              BAS DE SIDEBAR
+          ========================= */}
           <div className="sidebar-bottom">
-{user?.role === "ADMIN" && (
-  <Link to="/parametres">
-    ⚙️ Paramètres
-  </Link>
-)}
+
+            {/* ADMIN UNIQUEMENT */}
+            {user?.role === "ADMIN" && (
+              <Link
+                to="/parametres"
+                onClick={fermerMenu}
+              >
+                ⚙️ <span>Paramètres</span>
+              </Link>
+            )}
 
             <button
               type="button"
               className="sidebar-logout"
-              onClick={deconnexion}
+              onClick={() => {
+                fermerMenu();
+                deconnexion();
+              }}
             >
-              🚪 Déconnexion
+              🚪 <span>Déconnexion</span>
             </button>
 
           </div>
 
         </aside>
 
-        {/* =================================================
+        {/* =========================
             CONTENU PRINCIPAL
-        ================================================= */}
-
+        ========================= */}
         <main className="main">
 
           <Routes>
 
             {/* DASHBOARD */}
-
             <Route
               path="/"
               element={<Dashboard />}
             />
 
             {/* ÉLÈVES */}
-
             <Route
               path="/eleves"
               element={<Eleves />}
             />
 
+            {/* PROFIL ÉLÈVE */}
             <Route
               path="/eleves/:matricule"
               element={<ProfilEleve />}
             />
 
             {/* INSCRIPTIONS */}
-
             <Route
               path="/inscriptions"
               element={<Inscriptions />}
             />
 
             {/* PAIEMENTS */}
-
             <Route
               path="/paiements"
               element={<Paiements />}
             />
 
             {/* REÇUS */}
-
             <Route
               path="/recus"
               element={<Recus />}
             />
 
+            {/* DÉTAIL REÇU */}
             <Route
               path="/recus/:numero"
               element={<DetailRecu />}
             />
 
-            {/* DÉPENSES */}
+            {/* DÉPENSES — ADMIN */}
+            <Route
+              path="/depenses"
+              element={
+                <RoleRoute role="ADMIN">
+                  <Depenses />
+                </RoleRoute>
+              }
+            />
 
-    <Route
-  path="/depenses"
-  element={
-    <RoleRoute role="ADMIN">
-      <Depenses />
-    </RoleRoute>
-  }
-/>
             {/* RAPPORTS */}
-
             <Route
               path="/rapports"
               element={<Rapports />}
             />
 
-            {/* PARAMÈTRES */}
-
+            {/* PARAMÈTRES — ADMIN */}
             <Route
-  path="/parametres"
-  element={
-    <RoleRoute role="ADMIN">
-      <Parametres />
-    </RoleRoute>
-  }
-/>
+              path="/parametres"
+              element={
+                <RoleRoute role="ADMIN">
+                  <Parametres />
+                </RoleRoute>
+              }
+            />
 
-            {/* =================================================
-                UTILISATEURS
-                ADMIN UNIQUEMENT
-            ================================================= */}
-
+            {/* UTILISATEURS — ADMIN */}
             <Route
               path="/utilisateurs"
               element={
@@ -272,7 +320,6 @@ function AppContent() {
           </Routes>
 
           {/* FOOTER */}
-
           <footer>
             © 2026 TSC — Temple du Savoir Club
           </footer>
@@ -283,10 +330,6 @@ function AppContent() {
     </ProtectedRoute>
   );
 }
-
-/* =====================================================
-   ROOT APP
-===================================================== */
 
 function App() {
   return (
